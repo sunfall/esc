@@ -1,0 +1,43 @@
+#!/usr/bin/env python2
+
+import sqlite3
+import time
+import zlib
+
+# "1GB should be enough for everybody."
+_MAP_SIZE = 1000000000
+
+class ESC:
+
+   def __init__(self, fn="esc.db"):
+      self._conn = sqlite3.connect(fn) 
+
+   def init(self):
+      self._conn.execute("CREATE TABLE IF NOT EXISTS esc(k VARCHAR(64) PRIMARY KEY, v BLOB, ts INTEGER)")
+
+   def get(self, k):
+      c = self._conn.execute("SELECT v FROM esc WHERE k = ?", (k,)) 
+      c_list = c.fetchall()
+      if len(c_list):
+         return zlib.decompress(c_list[0][0])
+      return None
+   
+   def put(self, k, v):
+      if not self.get(k):
+         c = self._conn.execute("INSERT INTO esc VALUES (?, ?, ?)", (k, buffer(zlib.compress(v)), int(time.time())))
+         self._conn.commit()
+
+   def delete(self, k):
+      if self.get(k):
+         c = self._conn.execute("DELETE FROM esc WHERE k = ?", (k,))
+         self._conn.commit()
+      
+
+if "__main__" == __name__:
+   esc = ESC()
+   esc.init()
+   esc.put("test_key", "ARSOES ZSOXCNZXOICEN XZOERSNT RSOITENR [[ RSOTERSTIRSINT ]]")
+   esc.put("test_key2", "ARSOES ZSOXCNEN XZOERSNT RSOITENR [[ RSOTERSTIRSINT ]]")
+#   esc.delete("test_key2")
+   print repr(esc.get("test_key"))
+   print repr(esc.get("test_key2"))
