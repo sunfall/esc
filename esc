@@ -5,16 +5,19 @@ import sys
 import time
 import zlib
 
-_VERSION = "0.0.1"
+_VERSION = "0.0.2"
 
 class ESC:
+
+   def __del__(self):
+      self._conn.close()
 
    def __init__(self, fn="esc.db"):
       self._conn = sqlite3.connect(fn) 
 
    def delete(self, k):
       if self.exists(k):
-         c = self._conn.execute("DELETE FROM esc WHERE k = ?", (k,))
+         self._conn.execute("DELETE FROM esc WHERE k = ?", (k,))
          self._conn.commit()
 
    def exists(self, k):
@@ -38,19 +41,23 @@ class ESC:
       self._conn.execute("CREATE TABLE IF NOT EXISTS esc(k VARCHAR(64) PRIMARY KEY, v BLOB, ts INTEGER)")
 
    def purge(self, older_than):
-      c = self._conn.execute("DELETE FROM esc WHERE ts < ?", (str(int(time.time() - older_than)),))
+      self._conn.execute("DELETE FROM esc WHERE ts < ?", (str(int(time.time() - older_than)),))
       self._conn.commit()
 
    def put(self, k, v):
       if not self.exists(k):
-         c = self._conn.execute("INSERT INTO esc VALUES (?, ?, ?)", (k, buffer(zlib.compress(v)), int(time.time())))
+         self._conn.execute("INSERT INTO esc VALUES (?, ?, ?)", (k, buffer(zlib.compress(v)), int(time.time())))
          self._conn.commit()
+
+   def tidy(self):
+      self._conn.execute("VACUUM")
+      self._conn.commit()
 
 if "__main__" == __name__:
    esc = ESC()
    argv = sys.argv
    if len(argv) < 2:
-      print("%s [delete|exists|get|init|purge|put|version] [arg]" % (argv[0],))
+      print("%s [delete|exists|get|init|purge|put|tidy|version] [arg]" % (argv[0],))
       sys.exit(0)
    cmd = argv[1]
    if cmd == "delete":
@@ -70,6 +77,8 @@ if "__main__" == __name__:
    elif cmd == "put":
       v = sys.stdin.read()
       esc.put(argv[2], v)
+   elif cmd == "tidy":
+      esc.tidy()
    elif cmd == "version":
       print("esc version %s" % _VERSION)
    else:
