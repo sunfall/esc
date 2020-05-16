@@ -4,9 +4,6 @@ import sqlite3
 import time
 import zlib
 
-# "1GB should be enough for everybody."
-_MAP_SIZE = 1000000000
-
 class ESC:
 
    def __init__(self, fn="esc.db"):
