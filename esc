@@ -38,7 +38,7 @@ class ESC:
       self._conn.execute("CREATE TABLE IF NOT EXISTS esc(k VARCHAR(64) PRIMARY KEY, v BLOB, ts INTEGER)")
 
    def purge(self, older_than):
-      c = self._conn.execute("DELETE FROM esc where ts < ?", int(time.time() - older_than))
+      c = self._conn.execute("DELETE FROM esc WHERE ts < ?", (str(int(time.time() - older_than)),))
       self._conn.commit()
 
    def put(self, k, v):
