@@ -5,7 +5,7 @@ import sys
 import time
 import zlib
 
-_VERSION = "0.0.2"
+_VERSION = "0.0.3"
 
 class ESC:
 
@@ -69,7 +69,11 @@ if "__main__" == __name__:
       print("False")
       sys.exit(1)
    elif cmd == "get":
-      sys.stdout.write((esc.get(argv[2])))
+      v = esc.get(argv[2])
+      if v:
+         sys.stdout.write((esc.get(argv[2])))
+         sys.exit(0)
+      sys.exit(1)
    elif cmd == "init":
       esc.init()
    elif cmd == "purge":
