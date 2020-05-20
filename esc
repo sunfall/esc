@@ -5,7 +5,7 @@ import sys
 import time
 import zlib
 
-_VERSION = "0.0.3"
+_VERSION = "0.0.4"
 
 class ESC:
 
@@ -54,8 +54,13 @@ class ESC:
       self._conn.commit()
 
 if "__main__" == __name__:
-   esc = ESC()
    argv = sys.argv
+   if ('-f' == argv[1]):
+      esc = ESC(argv[2])
+      argv = [sys.argv[0]]
+      argv.extend(sys.argv[3:])
+   else:
+      esc = ESC()
    if len(argv) < 2:
       print("%s [delete|exists|get|init|purge|put|tidy|version] [arg]" % (argv[0],))
       sys.exit(0)
