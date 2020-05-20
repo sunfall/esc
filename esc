@@ -5,7 +5,7 @@ import sys
 import time
 import zlib
 
-_VERSION = "0.0.4"
+_VERSION = "0.0.5"
 
 class ESC:
 
@@ -47,6 +47,9 @@ class ESC:
    def put(self, k, v):
       if not self.exists(k):
          self._conn.execute("INSERT INTO esc VALUES (?, ?, ?)", (k, buffer(zlib.compress(v)), int(time.time())))
+         self._conn.commit()
+      else:
+         self._conn.execute("UPDATE esc SET v = ?, ts = ? WHERE k = ?", (buffer(zlib.compress(v)), int(time.time()), k))
          self._conn.commit()
 
    def tidy(self):
