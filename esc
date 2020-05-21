@@ -5,7 +5,7 @@ import sys
 import time
 import zlib
 
-_VERSION = "0.0.5"
+_VERSION = "0.0.6"
 
 class ESC:
 
@@ -36,7 +36,7 @@ class ESC:
          self._conn.commit()
          return zlib.decompress(c_list[0][0])
       return None
-   
+
    def init(self):
       self._conn.execute("CREATE TABLE IF NOT EXISTS esc(k VARCHAR(64) PRIMARY KEY, v BLOB, ts INTEGER)")
 
@@ -59,7 +59,7 @@ class ESC:
 if "__main__" == __name__:
    argv = sys.argv
    if len(argv) < 2:
-      print("%s [delete|exists|get|init|purge|put|tidy|version] [arg]" % (argv[0],))
+      print("%s [delete|echoput|exists|get|init|purge|put|tidy|version] [arg]" % (argv[0],))
       sys.exit(0)
    if ('-f' == argv[1]):
       esc = ESC(argv[2])
@@ -70,6 +70,10 @@ if "__main__" == __name__:
    cmd = argv[1]
    if cmd == "delete":
       esc.delete(argv[2])
+   elif cmd == "echoput":
+      v = sys.stdin.read()
+      esc.put(argv[2], v)
+      sys.stdout.write(v)
    elif cmd == "exists":
       if esc.exists(argv[2]):
          print("True")
