@@ -5,98 +5,98 @@ import sys
 import time
 import zlib
 
-_VERSION = "0.0.6"
+_VERSION = "0.0.6a"
 
-class ESC:
+class ESC(object):
 
-   def __del__(self):
-      self._conn.close()
+    def __del__(self):
+        self._conn.close()
 
-   def __init__(self, fn="esc.db"):
-      self._conn = sqlite3.connect(fn) 
+    def __init__(self, fn="esc.db"):
+        self._conn = sqlite3.connect(fn)
 
-   def delete(self, k):
-      if self.exists(k):
-         self._conn.execute("DELETE FROM esc WHERE k = ?", (k,))
-         self._conn.commit()
+    def delete(self, k):
+        if self.exists(k):
+            self._conn.execute("DELETE FROM esc WHERE k = ?", (k,))
+            self._conn.commit()
 
-   def exists(self, k):
-      c = self._conn.execute("SELECT k FROM esc where k = ?", (k,))
-      c_list = c.fetchall()
-      if len(c_list):
-         return True
-      return False
+    def exists(self, k):
+        c = self._conn.execute("SELECT k FROM esc where k = ?", (k,))
+        c_list = c.fetchall()
+        if c_list:
+            return True
+        return False
 
-   def get(self, k):
-      c = self._conn.execute("SELECT v FROM esc WHERE k = ?", (k,)) 
-      c_list = c.fetchall()
-      if len(c_list):
-         # Update the timestamp, as we touched the cache.
-         self._conn.execute("UPDATE esc SET ts = ? WHERE k = ?", (int(time.time()), k))
-         self._conn.commit()
-         return zlib.decompress(c_list[0][0])
-      return None
+    def get(self, k):
+        c = self._conn.execute("SELECT v FROM esc WHERE k = ?", (k,))
+        c_list = c.fetchall()
+        if c_list:
+            # Update the timestamp, as we touched the cache.
+            self._conn.execute("UPDATE esc SET ts = ? WHERE k = ?", (int(time.time()), k))
+            self._conn.commit()
+            return zlib.decompress(c_list[0][0])
+        return None
 
-   def init(self):
-      self._conn.execute("CREATE TABLE IF NOT EXISTS esc(k VARCHAR(64) PRIMARY KEY, v BLOB, ts INTEGER)")
+    def init(self):
+        self._conn.execute("CREATE TABLE IF NOT EXISTS esc(k VARCHAR(64) PRIMARY KEY, v BLOB, ts INTEGER)")
 
-   def purge(self, older_than):
-      self._conn.execute("DELETE FROM esc WHERE ts < ?", (str(int(time.time() - older_than)),))
-      self._conn.commit()
+    def purge(self, older_than):
+        self._conn.execute("DELETE FROM esc WHERE ts < ?", (str(int(time.time() - older_than)),))
+        self._conn.commit()
 
-   def put(self, k, v):
-      if not self.exists(k):
-         self._conn.execute("INSERT INTO esc VALUES (?, ?, ?)", (k, buffer(zlib.compress(v)), int(time.time())))
-         self._conn.commit()
-      else:
-         self._conn.execute("UPDATE esc SET v = ?, ts = ? WHERE k = ?", (buffer(zlib.compress(v)), int(time.time()), k))
-         self._conn.commit()
+    def put(self, k, val):
+        if not self.exists(k):
+            self._conn.execute("INSERT INTO esc VALUES (?, ?, ?)", (k, buffer(zlib.compress(val)), int(time.time())))
+            self._conn.commit()
+        else:
+            self._conn.execute("UPDATE esc SET v = ?, ts = ? WHERE k = ?", (buffer(zlib.compress(val)), int(time.time()), k))
+            self._conn.commit()
 
-   def tidy(self):
-      self._conn.execute("VACUUM")
-      self._conn.commit()
+    def tidy(self):
+        self._conn.execute("VACUUM")
+        self._conn.commit()
 
-if "__main__" == __name__:
-   argv = sys.argv
-   if len(argv) < 2:
-      print("%s [delete|echoput|exists|get|init|purge|put|tidy|version] [arg]" % (argv[0],))
-      sys.exit(0)
-   if ('-f' == argv[1]):
-      esc = ESC(argv[2])
-      argv = [sys.argv[0]]
-      argv.extend(sys.argv[3:])
-   else:
-      esc = ESC()
-   cmd = argv[1]
-   if cmd == "delete":
-      esc.delete(argv[2])
-   elif cmd == "echoput":
-      v = sys.stdin.read()
-      esc.put(argv[2], v)
-      sys.stdout.write(v)
-   elif cmd == "exists":
-      if esc.exists(argv[2]):
-         print("True")
-         sys.exit(0)
-      print("False")
-      sys.exit(1)
-   elif cmd == "get":
-      v = esc.get(argv[2])
-      if v:
-         sys.stdout.write((esc.get(argv[2])))
-         sys.exit(0)
-      sys.exit(1)
-   elif cmd == "init":
-      esc.init()
-   elif cmd == "purge":
-      esc.purge(int(argv[2]))
-   elif cmd == "put":
-      v = sys.stdin.read()
-      esc.put(argv[2], v)
-   elif cmd == "tidy":
-      esc.tidy()
-   elif cmd == "version":
-      print("esc version %s" % _VERSION)
-   else:
-      print("Unknown command.")
-      sys.exit(1)
+if __name__ == "__main__":
+    argv = sys.argv
+    if len(argv) < 2:
+        print("%s [delete|echoput|exists|get|init|purge|put|tidy|version] [arg]" % (argv[0],))
+        sys.exit(0)
+    if argv[1] == '-f':
+        esc = ESC(argv[2])
+        argv = [sys.argv[0]]
+        argv.extend(sys.argv[3:])
+    else:
+        esc = ESC()
+    cmd = argv[1]
+    if cmd == "delete":
+        esc.delete(argv[2])
+    elif cmd == "echoput":
+        v = sys.stdin.read()
+        esc.put(argv[2], v)
+        sys.stdout.write(v)
+    elif cmd == "exists":
+        if esc.exists(argv[2]):
+            print("True")
+            sys.exit(0)
+        print("False")
+        sys.exit(1)
+    elif cmd == "get":
+        v = esc.get(argv[2])
+        if v:
+            sys.stdout.write((esc.get(argv[2])))
+            sys.exit(0)
+        sys.exit(1)
+    elif cmd == "init":
+        esc.init()
+    elif cmd == "purge":
+        esc.purge(int(argv[2]))
+    elif cmd == "put":
+        v = sys.stdin.read()
+        esc.put(argv[2], v)
+    elif cmd == "tidy":
+        esc.tidy()
+    elif cmd == "version":
+        print("esc version %s" % _VERSION)
+    else:
+        print("Unknown command.")
+        sys.exit(1)
